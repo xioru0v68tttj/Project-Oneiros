@@ -1,0 +1,28 @@
+#include <stdio.h>
+
+#define MAX_INSTINCTS 3
+#define DECISION_THRESHOLD 0.5 // Threshold for instinct activation decision
+
+typedef struct {
+    char name[50];
+    double activationLevel; // Current activation level
+    double threshold; // Activation threshold
+    double emotionalInfluence; // Represents emotional state
+    double learningEffect; // Scale from previous experiences
+} Instinct;
+
+// Subroutine for subconscious instinctual awareness decision-making
+void subconsciousInstinctualAwareness(Instinct instincts[], int totalInstincts) {
+    for (int i = 0; i < totalInstincts; i++) {
+        // Decision logic based on activation level relative to threshold
+        if (instincts[i].activationLevel > instincts[i].threshold) {
+            // Take action based on activated instinct
+            printf("Subconscious Decision: %s Activated! (Activation Level: %.2f)\n", instincts[i].name, instincts[i].activationLevel);
+            
+            // Implement additional decision-making logic here,
+            // such as adjusting behavior, triggering responses, etc.
+        } else {
+            printf("Subconscious Decision: %s Not Activated. (Activation Level: %.2f)\n", instincts[i].name, instincts[i].activationLevel);
+        }
+    }
+}

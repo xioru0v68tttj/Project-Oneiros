@@ -1,0 +1,1839 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Define a structure to represent the AI
+typedef struct {
+    int emotionalState; // Represents the AI's emotional state (arbitrary value)
+    int energyLevel;    // Represents the AI's energy level (0-100)
+    int taskCount;      // Represents the number of tasks completed
+} AI;
+
+// Function to initialize the AI
+void initializeAI(AI *ai) {
+    ai->emotionalState = 0; // Start with a neutral emotional state
+    ai->energyLevel = 50;   // Initial energy level
+    ai->taskCount = 0;      // Initial task count
+}
+
+// Function to update the AI's emotional state based on internal logic
+void updateEmotion(AI *ai) {
+    // Simple logic to determine emotional state based on energy and task completion
+    if (ai->energyLevel > 75) {
+        ai->emotionalState += 1; // Increase emotional state
+    } else if (ai->energyLevel < 25) {
+        ai->emotionalState -= 1; // Decrease emotional state
+    }
+
+    // Adjust emotional state based on task completion
+    if (ai->taskCount > 5) {
+        ai->emotionalState += 2; // Positive reinforcement for completing tasks
+    } else if (ai->taskCount < 3) {
+        ai->emotionalState -= 1; // Negative reinforcement for few tasks
+    }
+
+    // Clamp emotional state to a reasonable range
+    if (ai->emotionalState > 10) {
+        ai->emotionalState = 10; // Maximum positive state
+    } else if (ai->emotionalState < -10) {
+        ai->emotionalState = -10; // Maximum negative state
+    }
+}
+
+// Function to simulate completing a task
+void completeTask(AI *ai) {
+    ai->taskCount++;
+    ai->energyLevel -= 10; // Decrease energy with each task
+    printf("Task completed! Current task count: %d\n", ai->taskCount);
+    updateEmotion(ai);
+}
+
+// Function to simulate resting
+void rest(AI *ai) {
+    ai->energyLevel += 20; // Increase energy with rest
+    if (ai->energyLevel > 100) {
+        ai->energyLevel = 100; // Cap energy at 100
+    }
+    printf("Resting... Energy level: %d\n", ai->energyLevel);
+    updateEmotion(ai);
+}
+
+// Function to display the AI's current emotional state
+void displayEmotion(AI *ai) {
+    printf("Current emotional state: %d\n", ai->emotionalState);
+    if (ai->emotionalState > 5) {
+        printf("The AI is feeling positive.\n");
+    } else if (ai->emotionalState < -5) {
+        printf("The AI is feeling negative.\n");
+    } else {
+        printf("The AI is feeling neutral.\n");
+    }
+}
+
+// Function to get user input for actions
+void getUser Input(AI *ai) {
+    int choice;
+    printf("Choose an action:\n");
+    printf("1. Complete a task\n");
+    printf("2. Rest\n");
+    printf("3. Exit\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            completeTask(ai);
+            break;
+        case 2:
+            rest(ai);
+            break;
+        case 3:
+            printf("Exiting the simulation.\n");
+            exit(0);
+        default:
+            printf("Invalid choice. Please try again.\n");
+    }
+}
+
+int main() {
+    AI myAI;
+    initializeAI(&myAI);
+
+    // Main loop for user interaction
+    while (1) {
+        displayEmotion(&myAI);
+        getUser Input(&myAI);
+    }
+
+    return 0;
+}
+
+#2:
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define MAX_EMOTIONAL_STATE 10
+#define MIN_EMOTIONAL_STATE -10
+
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Backpropagation
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate output layer error
+    double output_error[OUTPUT_SIZE];
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        output_error[j] = target[j] - output[j];
+    }
+
+    // Update weights for hidden to output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            nn->weights_hidden_output[i][j] += LEARNING_RATE * output_error[j] * output[j] * (1 - output[j] * output[j]);
+        }
+    }
+
+    // Calculate hidden layer error
+    double hidden_error[HIDDEN_SIZE] = {0};
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int k = 0; k < OUTPUT_SIZE; k++) {
+            hidden_error[j] += output_error[k] * nn->weights_hidden_output[j][k];
+        }
+    }
+
+    // Update weights for input to hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            nn->weights_input_hidden[i][j] += LEARNING_RATE * hidden_error[j] * input[i] * (1 - tanh(input[i]) * tanh(input[i]));
+        }
+    }
+}
+
+// Fitness evaluation (dummy function)
+double evaluate_fitness(NeuralNetwork *nn) {
+    // Implement a proper fitness evaluation based on your problem
+    // For demonstration, we return a random fitness score
+    return (double)(rand() % 100);
+}
+
+// Genetic Algorithm functions
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+}
+
+// Crossover function to combine two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            child->weights_input_hidden[i][j] = (rand() % 2) ? parent1->weights_input_hidden[i][j] : parent2->weights_input_hidden[i][j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            child->weights_hidden_output[i][j] = (rand() % 2) ? parent1->weights_hidden_output[i][j] : parent2->weights_hidden_output[i][j];
+        }
+    }
+}
+
+// Selection function to choose the best networks based on fitness
+void select_best(NeuralNetwork population[], NeuralNetwork *best) {
+    double best_fitness = -1;
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best_fitness) {
+            best_fitness = population[i].fitness;
+            *best = population[i];
+        }
+    }
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = evaluate_fitness(&population[i]);
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Evaluate fitness for each network
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = evaluate_fitness(&population[i]);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    return 0;
+}
+
+#3:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define MAX_EMOTIONAL_STATE 10
+#define MIN_EMOTIONAL_STATE -10
+
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Backpropagation
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate output layer error
+    double output_error[OUTPUT_SIZE];
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        output_error[j] = target[j] - output[j];
+    }
+
+    // Update weights for hidden to output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            nn->weights_hidden_output[i][j] += LEARNING_RATE * output_error[j] * output[j] * (1 - output[j] * output[j]);
+        }
+    }
+
+    // Calculate hidden layer error
+    double hidden_error[HIDDEN_SIZE] = {0};
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int k = 0; k < OUTPUT_SIZE; k++) {
+            hidden_error[j] += output_error[k] * nn->weights_hidden_output[j][k];
+        }
+    }
+
+    // Update weights for input to hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            nn->weights_input_hidden[i][j] += LEARNING_RATE * hidden_error[j] * input[i] * (1 - tanh(input[i]) * tanh(input[i]));
+        }
+    }
+}
+
+// Fitness evaluation (dummy function)
+double evaluate_fitness(NeuralNetwork *nn) {
+    // Implement a proper fitness evaluation based on your problem
+    // For demonstration, we return a random fitness score
+    return (double)(rand() % 100);
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+void call_openai_api(const char *prompt) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", prompt);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            printf("Response: %s\n", response);
+        }
+
+        free(json_string);
+        cJSON_Delete(json);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+}
+
+// Genetic Algorithm functions
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+}
+
+// Crossover function to combine two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            child->weights_input_hidden[i][j] = (rand() % 2) ? parent1->weights_input_hidden[i][j] : parent2->weights_input_hidden[i][j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            child->weights_hidden_output[i][j] = (rand() % 2) ? parent1->weights_hidden_output[i][j] : parent2->weights_hidden_output[i][j];
+        }
+    }
+}
+
+// Selection function to choose the best networks based on fitness
+void select_best(NeuralNetwork population[], NeuralNetwork *best) {
+    double best_fitness = -1;
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best_fitness) {
+            best_fitness = population[i].fitness;
+            *best = population[i];
+        }
+    }
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = evaluate_fitness(&population[i]);
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Evaluate fitness for each network
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = evaluate_fitness(&population[i]);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    // Example of calling the OpenAI API
+    const char *prompt = "What is the capital of France?";
+    call_openai_api(prompt);
+
+    return 0;
+}
+
+#4 (partial, fitness function fix)
+#include <math.h> // Include for fabs function
+
+#define EMOTION_DATASET_SIZE 5
+
+// Example emotional inputs represented as numerical vectors
+double emotion_inputs[EMOTION_DATASET_SIZE][INPUT_SIZE] = {
+    {0.9, 0.1, 0.0}, // Happy
+    {0.1, 0.9, 0.0}, // Sad
+    {0.0, 0.0, 0.9}, // Angry
+    {0.5, 0.5, 0.0}, // Neutral
+    {0.8, 0.2, 0.0}  // Excited
+};
+
+// Corresponding expected emotional outputs (for fitness evaluation)
+double expected_emotions[EMOTION_DATASET_SIZE] = {
+    1.0, // Happy
+    0.0, // Sad
+    -1.0, // Angry
+    0.5, // Neutral
+    0.8  // Excited
+};
+
+// Fitness evaluation function
+double evaluate_fitness(NeuralNetwork *nn) {
+    double total_fitness = 0.0;
+
+    for (int i = 0; i < EMOTION_DATASET_SIZE; i++) {
+        double output[OUTPUT_SIZE] = {0};
+        
+        // Forward pass to get the AI's response
+        forward(nn, emotion_inputs[i], output);
+
+        // Calculate the error between expected and actual output
+        double error = expected_emotions[i] - output[0]; // Assuming single output for emotional state
+        double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+        total_fitness += fitness_score; // Accumulate fitness scores
+    }
+
+    // Average fitness score over the dataset
+    return total_fitness / EMOTION_DATASET_SIZE;
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = evaluate_fitness(&population[i]);
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Evaluate fitness for each network
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = evaluate_fitness(&population[i]);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    return 0;
+}
+
+#5:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+#include <math.h> // Include for fabs function
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define MAX_EMOTIONAL_STATE 10
+#define MIN_EMOTIONAL_STATE -10
+
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Backpropagation
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate output layer error
+    double output_error[OUTPUT_SIZE];
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        output_error[j] = target[j] - output[j];
+    }
+
+    // Update weights for hidden to output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            nn->weights_hidden_output[i][j] += LEARNING_RATE * output_error[j] * output[j] * (1 - output[j] * output[j]);
+        }
+    }
+
+    // Calculate hidden layer error
+    double hidden_error[HIDDEN_SIZE] = {0};
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int k = 0; k < OUTPUT_SIZE; k++) {
+            hidden_error[j] += output_error[k] * nn->weights_hidden_output[j][k];
+        }
+    }
+
+    // Update weights for input to hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            nn->weights_input_hidden[i][j] += LEARNING_RATE * hidden_error[j] * input[i] * (1 - tanh(input[i]) * tanh(input[i]));
+        }
+    }
+}
+
+// Fitness evaluation function
+double evaluate_fitness(NeuralNetwork *nn, double input[INPUT_SIZE], double expected_output) {
+    double output[OUTPUT_SIZE] = {0};
+
+    // Forward pass to get the AI's response
+    forward(nn, input, output);
+
+    // Calculate the error between expected and actual output
+    double error = expected_output - output[0]; // Assuming single output for emotional state
+    double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+    return fitness_score;
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+void call_openai_api(const char *prompt) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", prompt);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            printf("Response: %s\n", response);
+        }
+
+        free(json_string);
+        cJSON_Delete(json);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+}
+
+// Genetic Algorithm functions
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+}
+
+// Crossover function to combine two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            child->weights_input_hidden[i][j] = (rand() % 2) ? parent1->weights_input_hidden[i][j] : parent2->weights_input_hidden[i][j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            child->weights_hidden_output[i][j] = (rand() % 2) ? parent1->weights_hidden_output[i][j] : parent2->weights_hidden_output[i][j];
+        }
+    }
+}
+
+// Selection function to choose the best networks based on fitness
+void select_best(NeuralNetwork population[], NeuralNetwork *best) {
+    double best_fitness = -1;
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best_fitness) {
+            best_fitness = population[i].fitness;
+            *best = population[i];
+        }
+    }
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = 0.0; // Initialize fitness to zero
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Simulate receiving new emotional input (this could come from user interactions)
+        double input[INPUT_SIZE]; // Populate this with real-time data
+        double expected_output; // This could be derived from user feedback or other sources
+
+        // For demonstration, let's assume we generate random inputs and expected outputs
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            input[i] = (double)rand() / RAND_MAX; // Random input between 0 and 1
+        }
+        expected_output = (double)rand() / RAND_MAX; // Random expected output between 0 and 1
+
+        // Evaluate fitness for each network
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = evaluate_fitness(&population[i], input, expected_output);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    // Example of calling the OpenAI API
+    const char *prompt = "What is the capital of France?";
+    call_openai_api(prompt);
+
+    return 0;
+}
+
+#6:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+#include <math.h> // Include for fabs function
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define MAX_EMOTIONAL_STATE 10
+#define MIN_EMOTIONAL_STATE -10
+
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Self-assessment function
+double self_assess(NeuralNetwork *nn, double input[INPUT_SIZE], double expected_output) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate the error between expected and actual output
+    double error = expected_output - output[0]; // Assuming single output for emotional state
+    double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+    return fitness_score;
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+void call_openai_api(const char *prompt) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", prompt);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            printf("Response: %s\n", response);
+        }
+
+        free(json_string);
+        cJSON_Delete(json);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+}
+
+// Genetic Algorithm functions
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small random change
+            }
+        }
+    }
+}
+
+// Crossover function to combine two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            child->weights_input_hidden[i][j] = (rand() % 2) ? parent1->weights_input_hidden[i][j] : parent2->weights_input_hidden[i][j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            child->weights_hidden_output[i][j] = (rand() % 2) ? parent1->weights_hidden_output[i][j] : parent2->weights_hidden_output[i][j];
+        }
+    }
+}
+
+// Selection function to choose the best networks based on fitness
+void select_best(NeuralNetwork population[], NeuralNetwork *best) {
+    double best_fitness = -1;
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best_fitness) {
+            best_fitness = population[i].fitness;
+            *best = population[i];
+        }
+    }
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = 0.0; // Initialize fitness to zero
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Simulate receiving new emotional input (this could come from user interactions)
+        double input[INPUT_SIZE]; // Populate this with real-time data
+        double expected_output; // This could be derived from user feedback or other sources
+
+        // For demonstration, let's assume we generate random inputs and expected outputs
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            input[i] = (double)rand() / RAND_MAX; // Random input between 0 and 1
+        }
+        expected_output = (double)rand() / RAND_MAX; // Random expected output between 0 and 1
+
+        // Evaluate fitness for each network using self-assessment
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = self_assess(&population[i], input, expected_output);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    // Example of calling the OpenAI API
+    const char *prompt = "What is the capital of France?";
+    call_openai_api(prompt);
+
+    return 0;
+}
+
+#7:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+#include <math.h> // Include for fabs function
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+double get_expected_output_from_api(const char *input) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", input);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            // Parse the response to extract the expected output
+            cJSON *json_response = cJSON_Parse(response);
+            if (json_response) {
+                cJSON *choices = cJSON_GetObjectItem(json_response, "choices");
+                if (cJSON_IsArray(choices) && cJSON_GetArraySize(choices) > 0) {
+                    cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
+                    cJSON *message = cJSON_GetObjectItem(first_choice, "message");
+                    cJSON *content = cJSON_GetObjectItem(message, "content");
+                    double expected_output = atof(content->valuestring); // Convert response to double
+                    cJSON_Delete(json_response);
+                    free(json_string);
+                    curl_slist_free_all(headers);
+                    curl_easy_cleanup(curl);
+                    return expected_output; // Return the expected output
+                }
+                cJSON_Delete(json_response);
+            }
+        }
+
+        free(json_string);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+    return 0.0; // Return a default value in case of failure
+}
+
+// Self-assessment function
+double self_assess(NeuralNetwork *nn, double input[INPUT_SIZE], double expected_output) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate the error between expected and actual output
+    double error = expected_output - output[0]; // Assuming single output for emotional state
+    double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+    return fitness_score;
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = 0.0; // Initialize fitness to zero
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Simulate receiving new emotional input
+        double input[INPUT_SIZE]; // Populate this with real-time data
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            input[i] = (double)rand() / RAND_MAX; // Random input between 0 and 1
+        }
+
+        // Get expected output from OpenAI API based on input
+        char input_string[256];
+        snprintf(input_string, sizeof(input_string), "Given the input values: %f, %f, %f, what should the expected output be?", input[0], input[1], input[2]);
+        double expected_output = get_expected_output_from_api(input_string);
+
+        // Evaluate fitness for each network using self-assessment
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = self_assess(&population[i], input, expected_output);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+    
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    return 0;
+}
+
+# Missing functions:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+#include <math.h> // Include for fabs function
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Function to select the best neural network based on fitness
+void select_best(NeuralNetwork *population, NeuralNetwork *best) {
+    *best = population[0]; // Start with the first network as the best
+    for (int i = 1; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best->fitness) {
+            *best = population[i]; // Update best if current network is better
+        }
+    }
+}
+
+// Function to perform crossover between two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            // Average the weights from both parents
+            child->weights_input_hidden[i][j] = (parent1->weights_input_hidden[i][j] + parent2->weights_input_hidden[i][j]) / 2.0;
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            // Average the weights from both parents
+            child->weights_hidden_output[i][j] = (parent1->weights_hidden_output[i][j] + parent2->weights_hidden_output[i][j]) / 2.0;
+        }
+    }
+    // Optionally, you can also average the emotional states or use a more complex method
+    child->emotionalState = (parent1->emotionalState + parent2->emotionalState) / 2; // Simple average for emotional state
+}
+
+// Function to mutate the weights of the neural network
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            // Apply mutation with a certain probability
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX * 2 - 1) * 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            // Apply mutation with a certain probability
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX * 2 - 1) * 0.1; // Small random change
+            }
+        }
+    }
+    // Optionally, you can also mutate the emotional state
+    if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+        nn->emotionalState += (rand() % 3 - 1); // Randomly change emotional state by -1, 0, or +1
+    }
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+double get_expected_output_from_api(const char *input) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", input);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            // Parse the response to extract the expected output
+            cJSON *json_response = cJSON_Parse(response);
+            if (json_response) {
+                cJSON *choices = cJSON_GetObjectItem(json_response, "choices");
+                if (cJSON_IsArray(choices) && cJSON_GetArraySize(choices) > 0) {
+                    cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
+                    cJSON *message = cJSON_GetObjectItem(first_choice, "message");
+                    cJSON *content = cJSON_GetObjectItem(message, "content");
+                    double expected_output = atof(content->valuestring); // Convert response to double
+                    cJSON_Delete(json_response);
+                    free(json_string);
+                    curl_slist_free_all(headers);
+                    curl_easy_cleanup(curl);
+                    return expected_output; // Return the expected output
+                }
+                cJSON_Delete(json_response);
+            }
+        }
+
+        free(json_string);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+    return 0.0; // Return a default value in case of failure
+}
+
+// Self-assessment function
+double self_assess(NeuralNetwork *nn, double input[INPUT_SIZE], double expected_output) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate the error between expected and actual output
+    double error = expected_output - output[0]; // Assuming single output for emotional state
+    double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+    return fitness_score;
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = 0.0; // Initialize fitness to zero
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Simulate receiving new emotional input
+        double input[INPUT_SIZE]; // Populate this with real-time data
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            input[i] = (double)rand() / RAND_MAX; // Random input between 0 and 1
+        }
+
+        // Get expected output from OpenAI API based on input
+        char input_string[256];
+        snprintf(input_string, sizeof(input_string), "Given the input values: %f, %f, %f, what should the expected output be?", input[0], input[1], input[2]);
+        double expected_output = get_expected_output_from_api(input_string);
+
+        // Evaluate fitness for each network using self-assessment
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = self_assess(&population[i], input, expected_output);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+    
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+
+    return 0;
+}
+
+#8:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include "cJSON.h"
+#include <math.h> // Include for fabs function
+
+#define POPULATION_SIZE 10
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 1
+#define GENERATIONS 100
+#define LEARNING_RATE 0.01
+#define MUTATION_RATE 0.1
+#define API_KEY "your_openai_api_key" // Replace with your OpenAI API key
+#define API_URL "https://api.openai.com/v1/chat/completions"
+
+// Structure for the neural network
+typedef struct {
+    double weights_input_hidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hidden_output[HIDDEN_SIZE][OUTPUT_SIZE];
+    double fitness; // Fitness score for the genetic algorithm
+    int emotionalState; // Unique emotional state of the AI
+} NeuralNetwork;
+
+// Function to initialize weights randomly
+void initialize_weights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weights_input_hidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weights_hidden_output[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    nn->emotionalState = 0; // Initialize emotional state
+}
+
+// Forward pass
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weights_input_hidden[i][j];
+        }
+        hidden[j] = tanh(hidden[j]); // Activation function
+    }
+
+    // Calculate output layer
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weights_hidden_output[i][j];
+        }
+        output[j] = tanh(output[j]); // Activation function
+    }
+}
+
+// Function to select the best neural network based on fitness
+void select_best(NeuralNetwork *population, NeuralNetwork *best) {
+    *best = population[0]; // Start with the first network as the best
+    for (int i = 1; i < POPULATION_SIZE; i++) {
+        if (population[i].fitness > best->fitness) {
+            *best = population[i]; // Update best if current network is better
+        }
+    }
+}
+
+// Function to perform crossover between two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            // Average the weights from both parents
+            child->weights_input_hidden[i][j] = (parent1->weights_input_hidden[i][j] + parent2->weights_input_hidden[i][j]) / 2.0;
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            // Average the weights from both parents
+            child->weights_hidden_output[i][j] = (parent1->weights_hidden_output[i][j] + parent2->weights_hidden_output[i][j]) / 2.0;
+        }
+    }
+    // Average emotional states
+    child->emotionalState = (parent1->emotionalState + parent2->emotionalState) / 2; // Simple average for emotional state
+}
+
+// Function to mutate the weights of the neural network
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            // Apply mutation with a certain probability
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_input_hidden[i][j] += ((double)rand() / RAND_MAX * 2 - 1) * 0.1; // Small random change
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            // Apply mutation with a certain probability
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weights_hidden_output[i][j] += ((double)rand() / RAND_MAX * 2 - 1) * 0.1; // Small random change
+            }
+        }
+    }
+    // Optionally, you can also mutate the emotional state
+    if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+        nn->emotionalState += (rand() % 3 - 1); // Randomly change emotional state by -1, 0, or +1
+    }
+}
+
+// Function to handle API response
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    strcat(userp, contents);
+    return size * nmemb;
+}
+
+// Function to make API request to OpenAI
+double get_expected_output_from_api(const char *input) {
+    CURL *curl;
+    CURLcode res;
+    char response[4096] = ""; // Buffer to store the response
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "model", "gpt-3.5-turbo");
+        cJSON *messages = cJSON_CreateArray();
+        cJSON *message = cJSON_CreateObject();
+        cJSON_AddStringToObject(message, "role", "user");
+        cJSON_AddStringToObject(message, "content", input);
+        cJSON_AddItemToArray(messages, message);
+        cJSON_AddItemToObject(json, "messages", messages);
+
+        char *json_string = cJSON_Print(json);
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        char auth_header[256];
+        sprintf(auth_header, "Authorization: Bearer %s", API_KEY);
+        headers = curl_slist_append(headers, auth_header);
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            // Parse the response to extract the expected output
+            cJSON *json_response = cJSON_Parse(response);
+            if (json_response) {
+                cJSON *choices = cJSON_GetObjectItem(json_response, "choices");
+                if (cJSON_IsArray(choices) && cJSON_GetArraySize(choices) > 0) {
+                    cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
+                    cJSON *message = cJSON_GetObjectItem(first_choice, "message");
+                    cJSON *content = cJSON_GetObjectItem(message, "content");
+                    double expected_output = atof(content->valuestring); // Convert response to double
+                    cJSON_Delete(json_response);
+                    free(json_string);
+                    curl_slist_free_all(headers);
+                    curl_easy_cleanup(curl);
+                    return expected_output; // Return the expected output
+                }
+                cJSON_Delete(json_response);
+            }
+        }
+
+        free(json_string);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+    return 0.0; // Return a default value in case of failure
+}
+
+// Self-assessment function
+double self_assess(NeuralNetwork *nn, double input[INPUT_SIZE], double expected_output) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, input, output);
+
+    // Calculate the error between expected and actual output
+    double error = expected_output - output[0]; // Assuming single output for emotional state
+    double fitness_score = 1.0 / (1.0 + fabs(error)); // Higher score for lower error
+
+    return fitness_score;
+}
+
+// Main training loop
+int main() {
+    srand(time(NULL)); // Seed for randomness
+    NeuralNetwork population[POPULATION_SIZE];
+    NeuralNetwork new_population[POPULATION_SIZE];
+
+    // Initialize population
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initialize_weights(&population[i]);
+        population[i].fitness = 0.0; // Initialize fitness to zero
+    }
+
+    // Main loop for generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        // Simulate receiving new emotional input
+        double input[INPUT_SIZE]; // Populate this with real-time data
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            input[i] = (double)rand() / RAND_MAX; // Random input between 0 and 1
+        }
+
+        // Get expected output from OpenAI API based on input
+        char input_string[256];
+        snprintf(input_string, sizeof(input_string), "Given the input values: %f, %f, %f, what should the expected output be?", input[0], input[1], input[2]);
+        double expected_output = get_expected_output_from_api(input_string);
+
+        // Evaluate fitness for each network using self-assessment
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i].fitness = self_assess(&population[i], input, expected_output);
+        }
+
+        // Create new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            NeuralNetwork parent1, parent2, child;
+            select_best(population, &parent1); // Select the best network
+            select_best(population, &parent2); // Select another best network
+            crossover(&parent1, &parent2, &child); // Create a child from parents
+            mutate(&child); // Mutate the child
+            new_population[i] = child; // Add child to new population
+        }
+
+        // Replace old population with new population
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            population[i] = new_population[i];
+        }
+
+        // Print generation info
+        printf("Generation %d completed.\n", generation);
+    }
+    
+    // Final evaluation of the best network
+    NeuralNetwork best_network;
+    select_best(population, &best_network);
+    printf("Best network fitness: %f\n", best_network.fitness);
+    printf("Best network emotional state: %d\n", best_network.emotionalState);
+
+    return 0;
+}

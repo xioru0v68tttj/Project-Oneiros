@@ -1,0 +1,83 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MEMORY_SIZE 10
+
+// Define possible emotions
+typedef enum {
+    NEUTRAL,
+    HAPPY,
+    SAD
+} Emotion;
+
+// Structure to represent the memory of emotional experiences
+typedef struct {
+    char stimulus[50];
+    Emotion emotion;
+} EmotionalMemory;
+
+// Function to evaluate the emotion based on input stimulus
+Emotion detectEmotion(const char* input) {
+    if (strstr(input, "happy") != NULL || strstr(input, "joy") != NULL) {
+        return HAPPY;
+    } else if (strstr(input, "sad") != NULL) {
+        return SAD;  // Keep it simple, treat sadness as a recognized input
+    }
+    return NEUTRAL;
+}
+
+// Function to store emotional experiences in memory
+void storeMemory(EmotionalMemory* memory, int* index, const char* stimulus, Emotion emotion) {
+    if (*index < MEMORY_SIZE) {
+        strcpy(memory[*index].stimulus, stimulus);
+        memory[*index].emotion = emotion;
+        (*index)++;
+    }
+}
+
+// Function to generate response based on detected emotion
+void generateResponse(Emotion emotion) {
+    switch (emotion) {
+        case HAPPY:
+            printf("Response: Great to hear that you're feeling happy!\n");
+            break;
+        case SAD:
+            printf("Response: I acknowledge you're feeling sad. Remember, it's okay to feel that way sometimes.\n");
+            break;
+        default:
+            printf("Response: Thank you for sharing your thoughts.\n");
+            break;
+    }
+}
+
+int main() {
+    EmotionalMemory memory[MEMORY_SIZE];
+    int memoryIndex = 0;
+
+    char input[50];
+
+    // Main loop to simulate emotional processing
+    while (1) {
+        printf("Enter a stimulus (type 'exit' to end): ");
+        fgets(input, sizeof(input), stdin);
+        // Remove newline character from input
+        input[strcspn(input, "\n")] = 0;
+
+        // Break the loop on 'exit' command
+        if (strcmp(input, "exit") == 0) {
+            break;
+        }
+
+        // Detect emotion from input
+        Emotion detectedEmotion = detectEmotion(input);
+        
+        // Store memory of the emotional experience
+        storeMemory(memory, &memoryIndex, input, detectedEmotion);
+        
+        // Generate an appropriate response
+        generateResponse(detectedEmotion);
+    }
+
+    return 0;
+}
