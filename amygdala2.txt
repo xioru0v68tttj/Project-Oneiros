@@ -1,0 +1,579 @@
+function initializeAmygdala() {
+    loadNeuralModel();
+    loadEmotionalResponseData();
+}
+
+function processInputStimulus(stimulus) {
+    const emotion = classifyEmotion(stimulus);
+    updateEmotionalMemory(emotion);
+    triggerBehavior(emotion);
+}
+
+function classifyEmotion(stimulus) {
+    // Placeholder: Implement a method to classify emotions based on stimulus.
+    // This could involve a trained neural network.
+    // For now, let's just return a sample emotion.
+    let emotion = "neutral"; // Replace with actual classification logic
+    return emotion;
+}
+
+function updateEmotionalMemory(emotion) {
+    // Placeholder: Implement logic to store responses and adjust thresholds
+    console.log("Updating emotional memory with emotion:", emotion);
+    // E.g., Store in a data structure
+}
+
+function triggerBehavior(emotion) {
+    // Output an appropriate behavioral response based on detected emotion
+    console.log("Triggering behavior for emotion:", emotion);
+    // E.g., Perform actions based on the emotion
+}
+
+function captureInput() {
+    // Placeholder: Implement logic to capture input from sensors.
+    // This can return stimuli relevant to the system's context.
+    return "sample stimulus"; // Replace with actual input capture logic
+}
+
+function main() {
+    initializeAmygdala();
+    while (true) {
+        const stimulus = captureInput(); // Get input from sensors
+        processInputStimulus(stimulus);
+        // Prevent infinite loop; implement sleep or pause to allow responsiveness
+        // e.g., use a setTimeout or similar mechanism for realistic pacing
+    }
+}
+
+// Start the main execution
+main();
+
+#2:#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 3
+#define POPULATION_SIZE 10
+#define GENERATIONS 1000
+#define LEARNING_RATE 0.1
+#define MUTATION_RATE 0.01
+
+typedef struct {
+    double weightsInputHidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weightsHiddenOutput[HIDDEN_SIZE][OUTPUT_SIZE];
+} NeuralNetwork;
+
+typedef struct {
+    NeuralNetwork nn;
+    double fitness;
+} Individual;
+
+// Function prototypes
+void initializeWeights(NeuralNetwork *nn);
+double sigmoid(double x);
+double sigmoidDerivative(double x);
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]);
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]);
+void train(Individual *individual, double inputs[][INPUT_SIZE], double targets[][OUTPUT_SIZE], int numSamples);
+void optimizeWithGA(Individual population[], int populationSize);
+void processInputStimulus(NeuralNetwork *nn, double stimulus[INPUT_SIZE]);
+void captureInput(double stimulus[INPUT_SIZE]);
+void updateEmotionalMemory(const char *emotion);
+void triggerBehavior(const char *emotion);
+const char* interpretOutput(double output[OUTPUT_SIZE]);
+void mutate(NeuralNetwork *nn);
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child);
+
+// Initialize weights for the neural network
+void initializeWeights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weightsInputHidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weightsHiddenOutput[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+}
+
+// Sigmoid activation function
+double sigmoid(double x) {
+    return 1 / (1 + exp(-x));
+}
+
+// Derivative of the sigmoid function
+double sigmoidDerivative(double x) {
+    return x * (1 - x);
+}
+
+// Forward pass through the network
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer activations
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weightsInputHidden[i][j];
+        }
+        hidden[j] = sigmoid(hidden[j]);
+    }
+
+    // Calculate output layer activations
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weightsHiddenOutput[i][j];
+        }
+        output[j] = sigmoid(output[j]);
+    }
+}
+
+// Backpropagation training logic
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+    double output[OUTPUT_SIZE] = {0};
+
+    // Forward pass
+    forward(nn, input, output);
+
+    // Calculate output layer error
+    double outputError[OUTPUT_SIZE];
+    double outputDelta[OUTPUT_SIZE];
+    for (int i = 0; i < OUTPUT_SIZE; i++) {
+        outputError[i] = target[i] - output[i];
+        outputDelta[i] = outputError[i] * sigmoidDerivative(output[i]);
+    }
+
+    // Calculate hidden layer error
+    double hiddenError[HIDDEN_SIZE] = {0};
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            hiddenError[i] += outputDelta[j] * nn->weightsHiddenOutput[i][j];
+        }
+        hiddenError[i] *= sigmoidDerivative(hidden[i]);
+    }
+
+    // Update weights for the hidden-output layer
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weightsHiddenOutput[i][j] += LEARNING_RATE * outputDelta[j] * hidden[i];
+        }
+    }
+
+    // Update weights for the input-hidden layer
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weightsInputHidden[i][j] += LEARNING_RATE * hiddenError[j] * input[i];
+        }
+    }
+}
+
+// Train the individual neural network
+void train(Individual *individual, double inputs[][INPUT_SIZE], double targets[][OUTPUT_SIZE], int numSamples) {
+    for (int i = 0; i < numSamples; i++) {
+        backpropagate(&individual->nn, inputs[i], targets[i]);
+    }
+}
+
+// Optimize the neural network using a genetic algorithm
+void optimizeWithGA(Individual population[], int populationSize) {
+    // Evaluate fitness for each individual
+    for (int i = 0; i < populationSize; i++) {
+        // Placeholder for fitness evaluation logic
+        population[i].fitness = rand() % 100; // Random fitness for demonstration
+    }
+
+    // Sort individuals based on fitness (simple selection)
+    for (int i = 0; i < populationSize - 1; i++) {
+        for (int j = i + 1; j < populationSize; j++) {
+            if (population[i].fitness < population[j].fitness) {
+                Individual temp = population[i];
+                population[i] = population[j];
+                population[j] = temp;
+            }
+        }
+    }
+
+    // Create new population through crossover and mutation
+    for (int i = 0; i < populationSize / 2; i++) {
+        NeuralNetwork child;
+        crossover(&population[i], &population[i + 1], &child);
+        mutate(&child);
+        population[populationSize - 1 - i] = (Individual){child, 0}; // Add child to population
+    }
+}
+
+// Crossover between two parent networks
+void crossover(NeuralNetwork *parent1, NeuralNetwork *parent2, NeuralNetwork *child) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            child->weightsInputHidden[i][j] = (rand() % 2) ? parent1->weightsInputHidden[i][j] : parent2->weightsInputHidden[i][j];
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            child->weightsHiddenOutput[i][j] = (rand() % 2) ? parent1->weightsHiddenOutput[i][j] : parent2->weightsHiddenOutput[i][j];
+        }
+    }
+}
+
+// Mutate the neural network weights
+void mutate(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weightsInputHidden[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small mutation
+            }
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            if ((double)rand() / RAND_MAX < MUTATION_RATE) {
+                nn->weightsHiddenOutput[i][j] += ((double)rand() / RAND_MAX) * 0.2 - 0.1; // Small mutation
+            }
+        }
+    }
+}
+
+// Process input stimulus and classify emotion
+void processInputStimulus(NeuralNetwork *nn, double stimulus[INPUT_SIZE]) {
+    double output[OUTPUT_SIZE] = {0};
+    forward(nn, stimulus, output);
+    
+    // Interpret output to classify emotion
+    const char *emotion = interpretOutput(output);
+    updateEmotionalMemory(emotion);
+    triggerBehavior(emotion);
+}
+
+// Capture input from sensors
+void captureInput(double stimulus[INPUT_SIZE]) {
+    // Placeholder for actual input capture logic
+    stimulus[0] = (double)(rand() % 2); // Example input: random binary value
+    stimulus[1] = (double)(rand() % 2); // Example input: random binary value
+    stimulus[2] = (double)(rand() % 2); // Example input: random binary value
+}
+
+// Update emotional memory
+void updateEmotionalMemory(const char *emotion) {
+    printf("Updating emotional memory with emotion: %s\n", emotion);
+    // Store in a data structure or adjust thresholds
+}
+
+// Trigger behavior based on detected emotion
+void triggerBehavior(const char *emotion) {
+    printf("Triggering behavior for emotion: %s\n", emotion);
+    // Perform actions based on the emotion
+}
+
+// Interpret the output of the neural network to classify emotion
+const char* interpretOutput(double output[OUTPUT_SIZE]) {
+    int maxIndex = 0;
+    for (int i = 1; i < OUTPUT_SIZE; i++) {
+        if (output[i] > output[maxIndex]) {
+            maxIndex = i;
+        }
+    }
+    const char *emotions[] = {"happy", "neutral", "sad"}; // Example emotions
+    return emotions[maxIndex];
+}
+
+// Main function to run the amygdala emulator
+int main() {
+    srand(time(NULL)); // Seed for random number generation
+
+    // Initialize population for genetic algorithm
+    Individual population[POPULATION_SIZE];
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initializeWeights(&population[i].nn);
+        population[i].fitness = 0; // Initial fitness
+    }
+
+    // Example training data (inputs and corresponding targets)
+    double trainingInputs[4][INPUT_SIZE] = {
+        {1.0, 0.0, 0.0}, // Example input for "happy"
+        {0.0, 1.0, 0.0}, // Example input for "neutral"
+        {0.0, 0.0, 1.0}, // Example input for "sad"
+        {0.5, 0.5, 0.0}  // Example mixed input
+    };
+    double trainingTargets[4][OUTPUT_SIZE] = {
+        {1.0, 0.0, 0.0}, // Target for "happy"
+        {0.0, 1.0, 0.0}, // Target for "neutral"
+        {0.0, 0.0, 1.0}, // Target for "sad"
+        {0.5, 0.5, 0.0}  // Target for mixed emotion
+    };
+
+    // Train the neural network for a number of generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            train(&population[i], trainingInputs, trainingTargets, 4);
+        }
+        optimizeWithGA(population, POPULATION_SIZE);
+        
+        // Process stimuli in the main loop
+        double stimulus[INPUT_SIZE];
+        captureInput(stimulus);
+        processInputStimulus(&population[0].nn, stimulus); // Use the best individual for processing
+    }
+
+    return 0;
+}
+
+#3:
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
+#define INPUT_SIZE 3
+#define HIDDEN_SIZE 5
+#define OUTPUT_SIZE 3
+#define POPULATION_SIZE 10
+#define GENERATIONS 1000
+#define LEARNING_RATE 0.1
+#define MUTATION_RATE 0.01
+#define MEMORY_SIZE 100 // Maximum number of experiences to store
+
+typedef struct {
+    double weightsInputHidden[INPUT_SIZE][HIDDEN_SIZE];
+    double weightsHiddenOutput[HIDDEN_SIZE][OUTPUT_SIZE];
+} NeuralNetwork;
+
+typedef struct {
+    NeuralNetwork nn;
+    double fitness;
+} Individual;
+
+typedef struct {
+    double stimulus[INPUT_SIZE];
+    double response[OUTPUT_SIZE];
+    double outcome; // Reward or punishment based on the response
+} Experience;
+
+typedef struct {
+    Experience experiences[MEMORY_SIZE];
+    int experienceCount;
+} Subconscious;
+
+// Function prototypes
+void initializeWeights(NeuralNetwork *nn);
+double sigmoid(double x);
+double sigmoidDerivative(double x);
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]);
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]);
+void train(Individual *individual, double inputs[][INPUT_SIZE], double targets[][OUTPUT_SIZE], int numSamples);
+void optimizeWithGA(Individual population[], int populationSize);
+void processInputStimulusWithSubconscious(NeuralNetwork *nn, Subconscious *sub, double stimulus[INPUT_SIZE]);
+void captureInput(double stimulus[INPUT_SIZE]);
+void updateSubconsciousMemory(Subconscious *sub, double stimulus[INPUT_SIZE], double response[OUTPUT_SIZE], double outcome);
+void makeSubconsciousDecision(Subconscious *sub, double stimulus[INPUT_SIZE], double *output);
+void adjustResponse(Experience *exp, double reward);
+
+// Initialize weights for the neural network
+void initializeWeights(NeuralNetwork *nn) {
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weightsInputHidden[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weightsHiddenOutput[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Random weights between -1 and 1
+        }
+    }
+}
+
+// Sigmoid activation function
+double sigmoid(double x) {
+    return 1 / (1 + exp(-x));
+}
+
+// Derivative of the sigmoid function
+double sigmoidDerivative(double x) {
+    return x * (1 - x);
+}
+
+// Forward pass through the network
+void forward(NeuralNetwork *nn, double input[INPUT_SIZE], double output[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+
+    // Calculate hidden layer activations
+    for (int j = 0; j < HIDDEN_SIZE; j++) {
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            hidden[j] += input[i] * nn->weightsInputHidden[i][j];
+        }
+        hidden[j] = sigmoid(hidden[j]);
+    }
+
+    // Calculate output layer activations
+    for (int j = 0; j < OUTPUT_SIZE; j++) {
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            output[j] += hidden[i] * nn->weightsHiddenOutput[i][j];
+        }
+        output[j] = sigmoid(output[j]);
+    }
+}
+
+// Backpropagation training logic
+void backpropagate(NeuralNetwork *nn, double input[INPUT_SIZE], double target[OUTPUT_SIZE]) {
+    double hidden[HIDDEN_SIZE] = {0};
+    double output[OUTPUT_SIZE] = {0};
+
+    // Forward pass
+    forward(nn, input, output);
+
+    // Calculate output layer error
+    double outputError[OUTPUT_SIZE];
+    double outputDelta[OUTPUT_SIZE];
+    for (int i = 0; i < OUTPUT_SIZE; i++) {
+        outputError[i] = target[i] - output[i];
+        outputDelta[i] = outputError[i] * sigmoidDerivative(output[i]);
+    }
+
+    // Calculate hidden layer error
+    double hiddenError[HIDDEN_SIZE] = {0};
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            hiddenError[i] += outputDelta[j] * nn->weightsHiddenOutput[i][j];
+        }
+        hiddenError[i] *= sigmoidDerivative(hidden[i]);
+    }
+
+    // Update weights for the hidden-output layer
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            nn->weightsHiddenOutput[i][j] += LEARNING_RATE * outputDelta[j] * hidden[i];
+        }
+    }
+
+    // Update weights for the input-hidden layer
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            nn->weightsInputHidden[i][j] += LEARNING_RATE * hiddenError[j] * input[i];
+        }
+    }
+}
+
+// Update subconscious memory with new experience
+void updateSubconsciousMemory(Subconscious *sub, double stimulus[INPUT_SIZE], double response[OUTPUT_SIZE], double outcome) {
+    if (sub->experienceCount < MEMORY_SIZE) {
+        memcpy(sub->experiences[sub->experienceCount].stimulus, stimulus, sizeof(double) * INPUT_SIZE);
+        memcpy(sub->experiences[sub->experienceCount].response, response, sizeof(double) * OUTPUT_SIZE);
+        sub->experiences[sub->experienceCount].outcome = outcome;
+        sub->experienceCount++;
+    } else {
+        // Optionally implement a strategy to replace old experiences
+        // For simplicity, we can overwrite the oldest experience
+        memcpy(sub->experiences[0].stimulus, stimulus, sizeof(double) * INPUT_SIZE);
+        memcpy(sub->experiences[0].response, response, sizeof(double) * OUTPUT_SIZE);
+        sub->experiences[0].outcome = outcome;
+    }
+}
+
+// Make a subconscious decision based on past experiences
+void makeSubconsciousDecision(Subconscious *sub, double stimulus[INPUT_SIZE], double *output) {
+    // Simple pattern matching or heuristic decision-making
+    for (int i = 0; i < sub->experienceCount; i++) {
+        if (memcmp(stimulus, sub->experiences[i].stimulus, sizeof(double) * INPUT_SIZE) == 0) {
+            // If a match is found, use the corresponding response
+            memcpy(output, sub->experiences[i].response, sizeof(double) * OUTPUT_SIZE);
+            return;
+        }
+    }
+    // Default output if no match is found
+    memset(output, 0, sizeof(double) * OUTPUT_SIZE);
+}
+
+// Adjust the response based on the outcome of the experience
+void adjustResponse(Experience *exp, double reward) {
+    // Simple adjustment logic: increase response for positive outcomes, decrease for negative
+    for (int i = 0; i < OUTPUT_SIZE; i++) {
+        exp->response[i] += reward * 0.1; // Adjust response based on reward
+        // Clamp response to a valid range if necessary
+        if (exp->response[i] < 0) exp->response[i] = 0;
+        if (exp->response[i] > 1) exp->response[i] = 1;
+    }
+}
+
+// Process input stimulus and classify response
+void processInputStimulusWithSubconscious(NeuralNetwork *nn, Subconscious *sub, double stimulus[INPUT_SIZE]) {
+    double output[OUTPUT_SIZE] = {0};
+    
+    // Check for subconscious decision first
+    makeSubconsciousDecision(sub, stimulus, output);
+    
+    // If no subconscious decision, use the neural network
+    if (output[0] == 0 && output[1] == 0 && output[2] == 0) {
+        forward(nn, stimulus, output);
+    }
+    
+    // Assume the outcome is determined by some external feedback mechanism
+    double outcome = 0; // Placeholder for actual outcome feedback
+    // For example, you could set outcome based on the success of the response
+    // outcome = (some condition based on the output);
+
+    // Update subconscious memory with the new experience
+    updateSubconsciousMemory(sub, stimulus, output, outcome);
+    
+    // Adjust the response based on the outcome
+    for (int i = 0; i < sub->experienceCount; i++) {
+        adjustResponse(&sub->experiences[i], outcome);
+    }
+
+    // Trigger behavior based on the output
+    triggerBehavior(output);
+}
+
+// Capture input from sensors
+void captureInput(double stimulus[INPUT_SIZE]) {
+    // Placeholder for actual input capture logic
+    stimulus[0] = (double)(rand() % 2); // Example input: random binary value
+    stimulus[1] = (double)(rand() % 2); // Example input: random binary value
+    stimulus[2] = (double)(rand() % 2); // Example input: random binary value
+}
+
+// Trigger behavior based on detected response
+void triggerBehavior(double output[OUTPUT_SIZE]) {
+    // Implement behavior based on the output
+    printf("Triggering behavior with response: [");
+    for (int i = 0; i < OUTPUT_SIZE; i++) {
+        printf("%f", output[i]);
+        if (i < OUTPUT_SIZE - 1) printf(", ");
+    }
+    printf("]\n");
+}
+
+// Main function to run the amygdala emulator with subconscious
+int main() {
+    srand(time(NULL)); // Seed for random number generation
+
+    // Initialize population for genetic algorithm
+    Individual population[POPULATION_SIZE];
+    for (int i = 0; i < POPULATION_SIZE; i++) {
+        initializeWeights(&population[i].nn);
+        population[i].fitness = 0; // Initial fitness
+    }
+
+    // Initialize the subconscious
+    Subconscious sub;
+    sub.experienceCount = 0; // Initialize experience count
+
+    // Train the neural network for a number of generations
+    for (int generation = 0; generation < GENERATIONS; generation++) {
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            // Placeholder for training logic
+            // You can implement training logic here if needed
+        }
+        
+        // Process stimuli in the main loop
+        double stimulus[INPUT_SIZE];
+        captureInput(stimulus);
+        processInputStimulusWithSubconscious(&population[0].nn, &sub, stimulus); // Use the best individual for processing
+    }
+
+    return 0;
+}
